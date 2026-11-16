@@ -1,16 +1,15 @@
-# Country Development Explorer
-
+Summative - Building Responsive UI
 A professional data dashboard and CLI tool that visualizes and explores the development indicators of over 200 countries using the World Bank Open Data API.
 
-## 🎯 Purpose
+🎯 Purpose
 The main purpose of this application is to provide a platform for researchers, students and analysts to search, filter and compare various development data around the world. This goes beyond the purpose of mere entertainment to provide a tool for those interested in exploring data.
 
-## 🔗 Live Demo
-- **Load Balancer URL:** `http://3.87.66.241`
+🔗 Live Demo
+Load Balancer URL: http://3.87.66.241
 
-## 🛠️ Project Structure
-```text
-country-explorer/
+🛠️ Project Structure
+text
+summative-final/
 ├── index.html          # Web Dashboard (Frontend)
 ├── cli_app.py          # Python Command Line Interface
 ├── README.md           # Documentation
@@ -42,21 +41,26 @@ web-02 (3.82.162.246): Nginx Web Server
 lb-01 (3.87.66.241): HAProxy Load Balancer
 
 Step-by-Step Deployment Process
-1. Server Provisioning & Nginx Setup (web-01 & web-02)
+
+Server Provisioning & Nginx Setup (web-01 & web-02)
 Installed Nginx on both servers and configured them to serve the static index.html file. The configuration file /etc/nginx/sites-available/default was updated with:
 
 nginx
 server {
-    listen 80 default_server;
-    root /home/ubuntu/country-explorer;
-    index index.html;
-    server_name _;
-    location / {
-        try_files $uri $uri/ =404;
-    }
+listen 80 default_server;
+root /home/ubuntu/country-explorer;
+index index.html;
+server_name _;
+location / {
+try_files 
+u
+r
+i
+uriuri/ =404;
+}
 }
 
-2. Load Balancer Configuration (lb-01)
+Load Balancer Configuration (lb-01)
 
 Haproxy was installed on lb-01 to balance the load. The configuration file, /etc/haproxy/haproxy.cfg, was modified to include a round-robin configuration as follows:
 
@@ -76,7 +80,7 @@ server web-01 3.82.191.8:80 check
 
 server web-02 3.82.162.246:80 check
 
-3. Verification
+Verification
 
 Distribution of the traffic between web-01 and web-02 is verified by X-Served-By header returned by the web app with each request.
 
@@ -101,4 +105,3 @@ Solution: Nginx was stopped and disabled on lb-01 (sudo service nginx stop) to f
 🎥 Demo Video
 
 Link: [Insert YouTube or Vimeo link here]
-
