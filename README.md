@@ -1,104 +1,172 @@
 # Country Development Explorer
 
-A professional data dashboard and CLI tool that visualizes and explores the development indicators of over 200 countries using the World Bank Open Data API.
+A web dashboard and Python CLI tool for exploring development indicators for over 200 countries, using the World Bank Open Data API.
 
-## 🎯 Purpose
-The main purpose of this application is to provide a platform for researchers, students and analysts to search, filter and compare various development data around the world. This goes beyond the purpose of mere entertainment to provide a tool for those interested in exploring data.
+**Live (load balancer):** http://3.87.66.241
+**Demo video (max 2 min):** [PASTE YOUTUBE/VIMEO LINK]
+**Repository:** https://github.com/Ntwali-creator/summative-final
 
-## 🔗 Live Demo
-- **Load Balancer URL:** `http://3.87.66.241`
+---
 
-## 🛠️ Project Structure
-```text
-country-explorer/
-├── index.html          # Web Dashboard (Frontend)
-├── cli_app.py          # Python Command Line Interface
-├── README.md           # Documentation
-└── .gitignore          # Git ignore file
-💻 Local Execution
-Running the Web App
-Open the index.html file in any modern web browser.
+## Purpose
 
-Enter a country name, select an indicator and click Search.
+Researchers, students and analysts often need to look up and compare development data (such as population, GDP and life expectancy) across countries. This app lets them search for a country, pick an indicator and view the results in one place, without digging through raw API output. [Add one or two sentences on why you chose this problem.]
 
-Running the CLI App
-Ensure you have Python 3 and the requests library installed:
+## Features
 
-bash
-pip install requests
-Run the CLI application:
+**Web app (`index.html`)**
+- Search for a country by full name (e.g. "Rwanda")
+- Select a development indicator: [list the indicators you included]
+- [Sorting: describe what can be sorted]
+- [Filtering: describe what can be filtered]
+- [Data visualization: chart/table, and which library if any]
+- Error messages when the API is down, returns no data, or the country isn't found: [describe what the user sees]
 
-bash
-python3 cli_app.py
-Follow the on-screen menu to search for a country or to compare two countries.
+**CLI app (`cli_app.py`)**
+- Menu-driven search for a single country
+- Side-by-side comparison of two countries
+- [Error handling you implemented, e.g. network failure, invalid input]
 
-🌐 Deployment Architecture
-The application is deployed on a very available web infrastructure that consists of three servers:
+## Project Structure
 
-web-01 (3.82.191.8): Nginx Web Server
+```
+summative-final/
+├── index.html      # Web dashboard (frontend)
+├── cli_app.py      # Python command-line interface
+├── README.md       # Documentation
+└── .gitignore      # Git ignore rules
+```
 
-web-02 (3.82.162.246): Nginx Web Server
+## API Used and Credits
 
-lb-01 (3.87.66.241): HAProxy Load Balancer
+- **World Bank Open Data API:** https://datahelpdesk.worldbank.org/knowledgebase/topics/125589
+- **Authentication:** none. The API is public, so there are no API keys or credentials in this repository.
+- **Attribution:** all data is provided by the World Bank. The API is credited in the web app footer and in the CLI code comments.
+- **Other resources:** [list libraries, fonts and tools, e.g. `requests` (https://requests.readthedocs.io), any chart library, Nginx, HAProxy]
 
-Step-by-Step Deployment Process
-1. Server Provisioning & Nginx Setup (web-01 & web-02)
-Installed Nginx on both servers and configured them to serve the static index.html file. The configuration file /etc/nginx/sites-available/default was updated with:
+## Running Locally
 
-nginx
+### Web app
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/Ntwali-creator/summative-final.git
+   cd summative-final
+   ```
+2. Open `index.html` in a modern web browser.
+3. Enter a country name, choose an indicator and click **Search**.
+
+### CLI app
+1. Make sure Python 3 is installed, then install the dependency:
+   ```bash
+   pip install requests
+   ```
+2. Run the app:
+   ```bash
+   python3 cli_app.py
+   ```
+3. Follow the on-screen menu to search for a country or compare two countries.
+
+## Deployment
+
+The app runs on three servers:
+
+| Server | IP | Role |
+|--------|----|------|
+| web-01 | 3.82.191.8 | Nginx web server |
+| web-02 | 3.82.162.246 | Nginx web server |
+| lb-01 | 3.87.66.241 | HAProxy load balancer |
+
+### 1. Web servers (web-01 and web-02)
+
+On each server I installed Nginx and copied the project files to `/home/ubuntu/country-explorer`:
+
+```bash
+sudo apt update && sudo apt install -y nginx
+git clone https://github.com/Ntwali-creator/summative-final.git /home/ubuntu/country-explorer
+```
+
+Then I edited `/etc/nginx/sites-available/default`:
+
+```nginx
 server {
     listen 80 default_server;
     root /home/ubuntu/country-explorer;
     index index.html;
     server_name _;
+
+    # Identifies which server answered (change the value on web-02)
+    add_header X-Served-By web-01;
+
     location / {
         try_files $uri $uri/ =404;
     }
 }
+```
 
-2. Load Balancer Configuration (lb-01)
+and reloaded Nginx:
 
-Haproxy was installed on lb-01 to balance the load. The configuration file, /etc/haproxy/haproxy.cfg, was modified to include a round-robin configuration as follows:
+```bash
+sudo nginx -t && sudo systemctl reload nginx
+```
 
-haproxy
+### 2. Load balancer (lb-01)
 
+I installed HAProxy and added this to `/etc/haproxy/haproxy.cfg`:
+
+```haproxy
 frontend http_front
-
-bind *:80
-
-default_backend http_back
+    bind *:80
+    default_backend http_back
 
 backend http_back
+    balance roundrobin
+    server web-01 3.82.191.8:80 check
+    server web-02 3.82.162.246:80 check
+```
 
-balance roundrobin
+Then I restarted it:
 
-server web-01 3.82.191.8:80 check
+```bash
+sudo haproxy -c -f /etc/haproxy/haproxy.cfg
+sudo systemctl restart haproxy
+```
 
-server web-02 3.82.162.246:80 check
+Round-robin sends each new request to the next server in turn, and `check` makes HAProxy stop sending traffic to a server that goes down.
 
-3. Verification
+### 3. Testing the load balancer
 
-Distribution of the traffic between web-01 and web-02 is verified by X-Served-By header returned by the web app with each request.
+Each server adds an `X-Served-By` header, so I can see which one handled a request:
 
-🔌 API Usage and Attribution
+```bash
+for i in 1 2 3 4; do curl -sI http://3.87.66.241 | grep X-Served-By; done
+```
 
-API Used: World Bank Open Data API
+Expected output, alternating between servers:
 
-Authentication: No API key is required for this public API.
+```
+X-Served-By: web-01
+X-Served-By: web-02
+X-Served-By: web-01
+X-Served-By: web-02
+```
 
-Attribution: All data is provided by the World Bank. The API is credited in the footer of the web app and in the CLI code comments.
+[Paste your real output here. Optionally also describe stopping Nginx on one server and confirming the site stays up.]
 
-🚧 Challenges Faced & Solutions
+## Challenges and Solutions
 
-API Country Codes vs. Names: The World Bank API uses 2-letter country codes (e.g. RW), but users prefer to type in full country names (e.g. Rwanda).
+1. **Country codes vs. names.** The World Bank API uses codes (e.g. `RW`), but users type names (e.g. "Rwanda"). *Solution:* the app fetches the full list of countries at startup and matches the user's input to the right code before requesting data.
+2. **HAProxy could not bind to port 80.** Nginx was already running on lb-01 and using the same port. *Solution:* I stopped and disabled Nginx on lb-01 (`sudo service nginx stop`) so HAProxy could use port 80.
+3. [Add any other challenge you really faced, such as CORS, missing data for some countries, or API response format.]
 
-Solution: Pre-fetch of all 200+ countries is done at app startup, and the app matches the user’s input to the corresponding 2 letter code before fetching the data.
+## Security Notes
 
-Load Balancer Port Conflict: HAProxy initially failed to bind to port 80 due to Nginx was using the same port on lb-01.
+No API keys or credentials are needed or stored. The `.gitignore` excludes [list what it excludes, e.g. `__pycache__/`, `.env`].
 
-Solution: Nginx was stopped and disabled on lb-01 (sudo service nginx stop) to free port 80 for HAProxy.
+## Credentials for Grading
 
-🎥 Demo Video
+- API key: none required (public API)
+- Login: none (the app has no authentication)
 
-Link: [Insert YouTube or Vimeo link here]
+## Author
 
+James Ntwali, African Leadership University
