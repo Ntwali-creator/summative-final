@@ -1,5 +1,10 @@
 import requests
 import os
+import urllib3
+import time
+
+# Disable SSL warnings (fixes sandbox certificate issues)
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # World Bank API - No API key required
 BASE_URL = "https://api.worldbank.org/v2"
@@ -12,17 +17,34 @@ INDICATORS = {
     "5": ("Capital City", "CAPITAL_CITY")
 }
 
+# Global Session with headers
+HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+session = requests.Session()
+session.headers.update(HEADERS)
+
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
+def api_request(url, retries=3, timeout=20):
+    """Helper function to handle API requests with retries."""
+    for attempt in range(retries):
+        try:
+            response = session.get(url, verify=False, timeout=timeout)
+            response.raise_for_status()
+            return response.json()
+        except (requests.exceptions.RequestException, ValueError) as e:
+            if attempt == retries - 1:
+                print(f"\n[Network Error] Could not reach World Bank API after {retries} attempts.")
+                print(f"Details: {e}")
+                return None
+            time.sleep(1) # Wait 1 second before retrying
+
 def fetch_all_countries():
-    try:
-        response = requests.get(f"{BASE_URL}/country?format=json&per_page=300", timeout=10)
-        data = response.json()
+    url = f"{BASE_URL}/country?format=json&per_page=300"
+    data = api_request(url)
+    if data and len(data) > 1 and data[1]:
         return [c for c in data[1] if c['region']['value'] != 'Aggregates']
-    except Exception as e:
-        print(f"Error connecting to API: {e}")
-        return []
+    return []
 
 def get_country_info(countries, user_input):
     user_input = user_input.lower()
@@ -33,14 +55,11 @@ def get_country_info(countries, user_input):
 
 def fetch_indicator_data(country_code, indicator_code, years=5):
     url = f"{BASE_URL}/country/{country_code}/indicator/{indicator_code}?format=json&mrv={years}"
-    try:
-        response = requests.get(url, timeout=10)
-        data = response.json()
-        if len(data) < 2 or not data[1]:
-            return None
+    data = api_request(url)
+    
+    if isinstance(data, list) and len(data) > 1 and data[1] is not None:
         return data[1]
-    except Exception:
-        return None
+    return None
 
 def display_country_data(country_info, indicator_data, indicator_name):
     print("\n" + "="*55)
@@ -55,9 +74,13 @@ def display_country_data(country_info, indicator_data, indicator_name):
         print(f"\n--- {indicator_name} ---")
         print(f"{'Year':<10} | {'Value':<20}")
         print("-" * 35)
+        has_data = False
         for item in indicator_data:
             if item['value'] is not None:
                 print(f"{item['date']:<10} | {item['value']:,.2f}")
+                has_data = True
+        if not has_data:
+            print("No recent data available for this indicator.")
                 
     print("\n" + "="*55)
 
@@ -99,7 +122,7 @@ def main():
     countries_db = fetch_all_countries()
     
     if not countries_db:
-        print("Failed to load initial data.")
+        print("Failed to load initial data. Check your network connection.")
         return
 
     while True:
@@ -138,7 +161,7 @@ def main():
             else:
                 indicator_data = fetch_indicator_data(country_info['id'], ind_code)
                 if not indicator_data:
-                    print("No data available for this selection.")
+                    print(f"No data available for {ind_name} in {country_info['name']}.")
                 else:
                     display_country_data(country_info, indicator_data, ind_name)
             
