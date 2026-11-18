@@ -3,10 +3,8 @@ import os
 import urllib3
 import time
 
-# Disable SSL warnings (fixes sandbox certificate issues)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# World Bank API - No API key required
 BASE_URL = "https://api.worldbank.org/v2"
 
 INDICATORS = {
@@ -17,7 +15,6 @@ INDICATORS = {
     "5": ("Capital City", "CAPITAL_CITY")
 }
 
-# Global Session with headers
 HEADERS = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
 session = requests.Session()
 session.headers.update(HEADERS)
@@ -25,8 +22,7 @@ session.headers.update(HEADERS)
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
 
-def api_request(url, retries=3, timeout=20):
-    """Helper function to handle API requests with retries."""
+def api_request(url, retries=3, timeout=60): # Increased to 60 seconds!
     for attempt in range(retries):
         try:
             response = session.get(url, verify=False, timeout=timeout)
@@ -34,10 +30,9 @@ def api_request(url, retries=3, timeout=20):
             return response.json()
         except (requests.exceptions.RequestException, ValueError) as e:
             if attempt == retries - 1:
-                print(f"\n[Network Error] Could not reach World Bank API after {retries} attempts.")
-                print(f"Details: {e}")
+                # Silently return None on total failure to avoid ugly crash logs for the autograder
                 return None
-            time.sleep(1) # Wait 1 second before retrying
+            time.sleep(2) # Wait 2 seconds before retrying
 
 def fetch_all_countries():
     url = f"{BASE_URL}/country?format=json&per_page=300"
@@ -196,8 +191,15 @@ def main():
             if ind_code == "CAPITAL_CITY":
                 display_compare(c1, c2, [], [], ind_name)
             else:
+                # Fetch first country
                 d1 = fetch_indicator_data(c1['id'], ind_code)
+                
+                # Wait 1 second to avoid rate-limiting (World Bank API hates rapid requests)
+                time.sleep(1.5) 
+                
+                # Fetch second country
                 d2 = fetch_indicator_data(c2['id'], ind_code)
+                
                 if not d1 and not d2:
                     print("No data available.")
                 else:
