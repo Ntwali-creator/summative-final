@@ -1,94 +1,105 @@
 # Country Development Explorer
 
-A web dashboard and Python CLI tool for exploring development indicators for over 200 countries, using the World Bank Open Data API.
+This is a website and a small program. Both help you find facts about countries. The facts come from the World Bank. For example: population, GDP, life expectancy.
 
-**Live site:** https://www.james-creator.tech
-**Demo video (max 2 min):** [PASTE YOUTUBE/VIMEO LINK]
-**Repository:** https://github.com/Ntwali-creator/summative-final
+**Website:** https://www.james-creator.tech
+**Demo video:** [PUT YOUR YOUTUBE OR VIMEO LINK HERE]
+**Code:** https://github.com/Ntwali-creator/summative-final
 
 ---
 
-## Purpose
+## Why I made this
 
-Researchers, students and analysts often need to look up and compare development data (such as population, GDP and life expectancy) across countries. This app lets them search for a country, pick an indicator and view the results in one place, without digging through raw API output.
+Students, teachers, and researchers often need to check facts about countries. They need to compare countries too. This app lets them type a country name, pick what they want to know, and see the answer fast. They do not need to search many websites.
 
-## Features
+## What the app can do
 
-**Web app (`index.html`)**
-- Search for a country by full name (e.g. "Rwanda")
-- Select a development indicator: [list the indicators you included]
-- [Sorting: describe what can be sorted]
-- [Filtering: describe what can be filtered]
-- [Data visualization: chart/table, and which library if any]
-- Error messages when the API is down, returns no data, or the country isn't found: [describe what the user sees]
+**Website (`index.html`)**
+- You type a country name, like "Rwanda".
+- You pick what you want to see (an indicator), like population or GDP.
+- The app shows the data for that country.
+- If something goes wrong (no internet, wrong name, API is down), the app shows a message. It does not just stay blank or crash.
 
-**CLI app (`cli_app.py`)**
-- Menu-driven search for a single country
-- Side-by-side comparison of two countries
-- [Error handling you implemented, e.g. network failure, invalid input]
+**Command-line program (`cli_app.py`)**
+- You run it in a terminal.
+- It shows a menu.
+- You can search one country.
+- You can also compare two countries side by side.
 
-## Project Structure
+## Files in this project
 
 ```
 summative-final/
-├── index.html      # Web dashboard (frontend)
-├── cli_app.py      # Python command-line interface
-├── README.md       # Documentation
-└── .gitignore      # Git ignore rules
+├── index.html      # The website
+├── cli_app.py      # The terminal program
+├── README.md       # This file
+└── .gitignore      # Tells Git which files to ignore
 ```
 
-## API Used and Credits
+## Where the data comes from
 
-- **World Bank Open Data API:** https://datahelpdesk.worldbank.org/knowledgebase/topics/125589
-- **Authentication:** none. The API is public, so there are no API keys or credentials in this repository.
-- **Attribution:** all data is provided by the World Bank. The API is credited in the web app footer and in the CLI code comments.
-- **Other resources:** [list libraries, fonts and tools, e.g. `requests` (https://requests.readthedocs.io), any chart library, Nginx, HAProxy, Let's Encrypt]
+- **API:** World Bank Open Data — https://datahelpdesk.worldbank.org/knowledgebase/topics/125589
+- **Do you need a password or key?** No. This API is free and open. Anyone can use it.
+- All the data belongs to the World Bank. We only show it in a nicer way.
 
-## Running Locally
+## How to run it on your own computer
 
-### Web app
-1. Clone the repository:
+### The website
+1. Download the code:
    ```bash
    git clone https://github.com/Ntwali-creator/summative-final.git
    cd summative-final
    ```
-2. Open `index.html` in a modern web browser.
-3. Enter a country name, choose an indicator and click **Search**.
+2. Open the file `index.html` in any web browser (Chrome, Firefox, etc.).
+3. Type a country name, choose what you want to see, and press Search.
 
-### CLI app
-1. Make sure Python 3 is installed, then install the dependency:
+### The terminal program
+1. Make sure Python 3 is on your computer.
+2. Install one small tool it needs:
    ```bash
    pip install requests
    ```
-2. Run the app:
+3. Run it:
    ```bash
    python3 cli_app.py
    ```
-3. Follow the on-screen menu to search for a country or compare two countries.
+4. Follow the menu on the screen.
 
-## Deployment
+## How the website is hosted (the servers)
 
-The app runs on three servers, with DNS records on `james-creator.tech` pointing to each:
+The website does not live on one computer. It lives on **three** computers, working together:
 
-| Server | Hostname | IP | DNS record |
-|--------|----------|----|-----------| 
-| web-01 | 7163-web-01 | 18.135.29.103 | web-01.james-creator.tech |
-| web-02 | 7163-web-02 | 18.133.181.216 | web-02.james-creator.tech |
-| lb-01  | 7163-lb-01  | 18.130.139.174 | www.james-creator.tech, lb-01.james-creator.tech |
+| Computer | What it does | Its address on the internet |
+|---|---|---|
+| web-01 | Shows the website | web-01.james-creator.tech |
+| web-02 | Shows the website (a second copy) | web-02.james-creator.tech |
+| lb-01 | Sends visitors to web-01 or web-02 | www.james-creator.tech |
 
-> Server IPs can change if the machines are re-provisioned. Check the current IPs on the dashboard, and update the DNS A records and the `backend` section of `haproxy.cfg` if they ever change.
+**Why two website computers?** If one computer breaks or is too busy, the other one still works. Visitors never notice.
 
-### 1. Web servers (web-01 and web-02)
+**Important:** these computers can change their IP address if they are restarted or rebuilt. Always check the IP on your server dashboard before you connect. If the IP changed, update:
+1. The DNS records (where your domain name points), and
+2. The `backend` part of the HAProxy file on lb-01 (shown further down).
 
-On each server, install Nginx and Git, then clone the app:
+### Step 1 — Set up web-01 and web-02
 
+Do this on **both** computers, one at a time.
+
+Install the web server (Nginx) and Git:
 ```bash
 sudo apt update && sudo apt install -y nginx git
+```
+
+Download the website code:
+```bash
 git clone https://github.com/Ntwali-creator/summative-final.git /home/ubuntu/summative-final
 ```
 
-Edit `/etc/nginx/sites-available/default`:
-
+Tell Nginx where to find the website files. Open this file:
+```bash
+sudo nano /etc/nginx/sites-available/default
+```
+and make it look like this:
 ```nginx
 server {
     listen 80 default_server;
@@ -99,29 +110,25 @@ server {
 
     server_name _;
 
-    # Stop the repo's .git history being served publicly
+    # Do not show our Git history to the public
     location ~ /\.git { deny all; }
 
     location / {
-        # Identifies which server answered each request
+        # This shows which computer answered. Helpful for testing.
         add_header X-Served-By $hostname;
         try_files $uri $uri/ =404;
     }
 }
 ```
 
-Using `$hostname` (rather than hardcoding "web-01") means the exact same config file works on both servers.
-
-Make the app directory readable by Nginx, then test and reload:
-
+Let Nginx read the website files:
 ```bash
 sudo chmod 755 /home/ubuntu
 sudo chmod -R 755 /home/ubuntu/summative-final
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Enable the firewall, allowing only SSH, HTTP and HTTPS:
-
+Turn on the firewall. This blocks every door into the computer except the three we need:
 ```bash
 sudo apt install -y ufw
 sudo ufw default deny incoming
@@ -132,24 +139,26 @@ sudo ufw allow 443/tcp
 sudo ufw --force enable
 ```
 
-### 2. HTTPS certificate (lb-01)
+### Step 2 — Get a free HTTPS certificate (on lb-01)
 
-Let's Encrypt issues certificates for real hostnames, so this uses the project's own domain:
+HTTPS means the connection is locked, like a locked envelope. Without it, anyone on the same Wi-Fi could read what visitors send. We use Let's Encrypt, which gives free certificates.
 
 ```bash
 sudo apt install -y certbot
-sudo systemctl stop haproxy        # certbot needs port 80 free
-sudo certbot certonly --standalone -d www.james-creator.tech --agree-tos -m <your-email> --non-interactive
+
+# Certbot needs port 80 free for a moment, so we stop HAProxy
+sudo systemctl stop haproxy
+
+sudo certbot certonly --standalone -d www.james-creator.tech --agree-tos -m YOUR_EMAIL_HERE --non-interactive
 
 sudo mkdir -p /etc/haproxy/certs
 sudo bash -c 'cat /etc/letsencrypt/live/www.james-creator.tech/fullchain.pem /etc/letsencrypt/live/www.james-creator.tech/privkey.pem > /etc/haproxy/certs/site.pem'
 sudo chmod 600 /etc/haproxy/certs/site.pem
 ```
 
-HAProxy needs the certificate and private key combined into a single PEM file. This file, and anything under `/etc/letsencrypt`, is never committed to Git.
+**Note:** change `YOUR_EMAIL_HERE` to your real email.
 
-**Certificate renewal** (certificates expire after 90 days):
-
+**This certificate is not forever.** It stops working after 90 days. To get a new one:
 ```bash
 sudo systemctl stop haproxy
 sudo certbot renew
@@ -157,10 +166,11 @@ sudo bash -c 'cat /etc/letsencrypt/live/www.james-creator.tech/fullchain.pem /et
 sudo systemctl start haproxy
 ```
 
-### 3. Load balancer (lb-01)
+### Step 3 — Set up the load balancer (lb-01)
 
-`/etc/haproxy/haproxy.cfg`:
+This computer decides which website computer (web-01 or web-02) answers each visitor. The program that does this is called **HAProxy**.
 
+File: `/etc/haproxy/haproxy.cfg`
 ```haproxy
 global
     ssl-default-bind-options no-sslv3
@@ -181,6 +191,7 @@ defaults
 
 frontend http_front
     bind *:80
+    # If someone visits with plain http://, send them to https:// instead
     http-request redirect scheme https code 301 unless { ssl_fc }
     default_backend http_back
 
@@ -194,52 +205,61 @@ backend http_back
     server web-02 18.133.181.216:80 check
 ```
 
-Validate and start:
-
+Check the file is correct, then start HAProxy:
 ```bash
 sudo haproxy -c -f /etc/haproxy/haproxy.cfg
+sudo systemctl enable haproxy
+sudo systemctl start haproxy
+```
+
+Turn on the firewall here too:
+```bash
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow 22/tcp
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw --force enable
-sudo systemctl enable haproxy
-sudo systemctl start haproxy
 ```
 
-### 4. Verification
-
-Each server adds an `X-Served-By` header, naming which one handled a given request:
+### Step 4 — Check that it all works
 
 ```bash
+# Each web computer should show the website title
 curl -s http://18.135.29.103 | grep -i "<title>"
 curl -s http://18.133.181.216 | grep -i "<title>"
+
+# Plain http:// should redirect to https://
 curl -sI http://www.james-creator.tech | head -3
+
+# Visiting many times should alternate between web-01 and web-02
 for i in 1 2 3 4 5 6; do curl -sI https://www.james-creator.tech | grep -i x-served-by; done
 ```
 
-Expected: both servers return the app's title, HTTP returns a 301 redirect to HTTPS, and the `x-served-by` values alternate between `7163-web-01` and `7163-web-02`.
+What you should see: both website computers show the title, HTTP sends you to HTTPS, and the last test shows `web-01`, `web-02`, `web-01`, `web-02`... one after another.
 
-Round-robin sends each new request to the next server in turn. The `check` option makes HAProxy stop sending traffic to a server that goes down, so the site stays up if one web server fails.
+"Round-robin" means HAProxy takes turns: first visitor to web-01, next to web-02, next to web-01, and so on. The word `check` in the config means HAProxy keeps testing each server. If one server stops answering, HAProxy stops sending visitors to it, until it comes back.
 
-## Challenges and Solutions
+## Problems I had, and how I solved them
 
-1. **Country codes vs. names.** The World Bank API uses codes (e.g. `RW`), but users type names (e.g. "Rwanda"). *Solution:* the app fetches the full list of countries at startup and matches the user's input to the right code before requesting data.
-2. **SSH key mismatch after server re-provisioning.** When servers were rebuilt, the new machines only trusted a different SSH key than the one used before. *Solution:* tried each available key explicitly with `ssh -i <key>`, and recorded per-server entries in `~/.ssh/config` to avoid confusion going forward.
-3. **Firewall allowed everything by default.** `ufw` wasn't installed, so nothing was actually blocked even though the required ports looked "open". *Solution:* installed `ufw`, set a default-deny policy for incoming traffic, and explicitly allowed only 22, 80 and 443.
-4. **Browsers rejected the first HTTPS certificate.** An initial self-signed certificate (used for testing before a domain was available) triggered security warnings. *Solution:* once `james-creator.tech` was set up with the correct A records, obtained a trusted Let's Encrypt certificate for `www.james-creator.tech`.
-5. **The `.git` folder was publicly readable.** A request to `/.git/config` returned the file instead of a 403. *Solution:* added `location ~ /\.git { deny all; }` to the Nginx config on both web servers.
+1. **Country names vs. country codes.** The World Bank API wants short codes, like `RW` for Rwanda, but people type full names. *Fix:* the app downloads the full list of countries first, then matches the name you typed to the right code.
+2. **My SSH key stopped working after a server was rebuilt.** The new computer trusted a different key than before. *Fix:* I tried each key I had until one worked, and I wrote down which key goes with which server.
+3. **The firewall did nothing at first.** The tool (`ufw`) was not even installed, so nothing was actually blocked, even though it looked "open" in tests. *Fix:* I installed it, blocked everything by default, then opened only ports 22, 80 and 443.
+4. **Browsers did not trust my first HTTPS certificate.** I made my own certificate before I had a real domain name, so browsers showed a warning. *Fix:* once my domain `james-creator.tech` was ready, I got a free, trusted certificate from Let's Encrypt for it.
+5. **My Git history was visible to everyone.** Anyone could open `/.git/config` on my website and see it. *Fix:* I added a rule in Nginx to block any request for `/.git/`.
+6. **Server IP addresses kept changing.** Some servers got new IP addresses after a restart. *Fix:* I always double-check the IP on the dashboard before trusting old notes, and I update DNS and HAProxy together whenever an IP changes.
 
-## Security Notes
+## About safety
 
-No API keys or credentials are needed or stored. The `.gitignore` excludes [list what it excludes, e.g. `__pycache__/`, `.env`, `*.pem`].
+- No password or API key is needed for this project. The World Bank API is open to everyone.
+- There is no login on the website or the terminal program.
+- The `.gitignore` file stops some files (like Python cache files) from being uploaded to GitHub by mistake.
 
-## Credentials for Grading
+## For the people grading this
 
-- API key: none required (public API)
-- Login: none (the app has no authentication)
+- API key needed: **none**
+- Login needed: **none**
 
-## Author
+## Made by
 
-James Ntwali, African Leadership University
+James Ntwali, African Leadership University (ALU)
